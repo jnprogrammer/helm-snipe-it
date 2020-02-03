@@ -1,0 +1,138 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "mychart.fullname" . }}
+  labels:
+    app: {{ template "mychart.name" . }}
+    chart: {{ template "mychart.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "mychart.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "mychart.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: "MYSQL_ROOT_PASSWORD"
+            valueFrom:
+              secretKeyRef:
+                key:  rootpassword
+                name: {{ .Values.service.name }}-auth
+          - name: "MYSQL_DATABASE"
+            valueFrom:
+              secretKeyRef:
+                key:  dbname
+                name: {{ .Release.Name }}-auth
+          - name: "MYSQL_USER"
+            valueFrom:
+              secretKeyRef:
+                key:  mysqluser
+                name: {{ .Release.Name }}-auth
+          - name: "MYSQL_PASSWORD"
+            valueFrom:
+              secretKeyRef:
+                key:  mysqlpassword
+                name: {{ .Release.Name }}-auth
+          - name: "MAIL_PORT_587_TCP_ADDR"
+            valueFrom:
+              secretKeyRef:
+                key:  mailserver
+                name: {{ .Release.Name }}-auth
+          - name: "MAIL_PORT_587_TCP_PORT"
+            valueFrom:
+              secretKeyRef:
+                key:  port
+                name: {{ .Release.Name }}-auth
+          - name: "MAIL_ENV_FROM_ADDR"
+            valueFrom:
+              secretKeyRef:
+                key:  address
+                name: {{ .Release.Name }}-auth
+          - name: "MAIL_ENV_FROM_NAME"
+            valueFrom:
+              secretKeyRef:
+                key:  fromname
+                name: {{ .Release.Name }}-auth
+          - name: "MAIL_ENV_ENCRYPTION"
+            valueFrom:
+              secretKeyRef:
+                key:  encryption
+                name: {{ .Release.Name }}-auth
+          - name: "MAIL_ENV_USERNAME"
+            valueFrom:
+              secretKeyRef:
+                key:  fromemail
+                name: {{ .Release.Name }}-auth
+          - name: "MAIL_ENV_PASSWORD"
+            valueFrom:
+              secretKeyRef:
+                key:  emailpw
+                name: {{ .Release.Name }}-auth
+          - name: "APP_ENV"
+            valueFrom:
+              secretKeyRef:
+                key:  env
+                name: {{ .Release.Name }}-auth
+          - name: "APP_DEBUG"
+            valueFrom:
+              secretKeyRef:
+                key:  debugsetting
+                name: {{ .Release.Name }}-auth
+          - name: "APP_KEY"
+            valueFrom:
+              secretKeyRef:
+                key:  appkey
+                name: {{ .Release.Name }}-auth
+          - name: "APP_URL"
+            valueFrom:
+              secretKeyRef:
+                key:  appurl
+                name: {{ .Release.Name }}-auth
+          - name: "APP_TIMEZONE"
+            valueFrom:
+              secretKeyRef:
+                key:  timezone
+                name: {{ .Release.Name }}-auth
+          - name: "APP_LOCALE"
+            valueFrom:
+              secretKeyRef:
+                key:  language
+                name: {{ .Release.Name }}-auth
+
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
